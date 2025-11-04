@@ -7,13 +7,13 @@ Write-Host "  Iniciando Ambiente Kafka com Bore para Databricks" -ForegroundColo
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Configurações
+# Configuracoes
 $KAFKA_PORT = 19092
 $BORE_CONFIG_FILE = "bore_url.txt"
 $DOCKER_COMPOSE_FILE = "docker-compose.yml"
 $DOCKER_COMPOSE_TEMPLATE = "docker-compose.template.yml"
 
-# Função para limpar processos antigos
+# Funcao para limpar processos antigos
 function Stop-OldProcesses {
     Write-Host "[1/6] Limpando processos antigos..." -ForegroundColor Yellow
 
@@ -25,7 +25,7 @@ function Stop-OldProcesses {
     # Para processos bore antigos
     Get-Process | Where-Object {$_.ProcessName -like "*bore*"} | Stop-Process -Force -ErrorAction SilentlyContinue
 
-    # Remove arquivos temporários
+    # Remove arquivos temporarios
     if (Test-Path $DOCKER_COMPOSE_FILE) {
         Remove-Item $DOCKER_COMPOSE_FILE -Force -ErrorAction SilentlyContinue
     }
@@ -33,38 +33,38 @@ function Stop-OldProcesses {
         Remove-Item $BORE_CONFIG_FILE -Force -ErrorAction SilentlyContinue
     }
 
-    Write-Host "  ✓ Processos antigos finalizados e arquivos temporários limpos" -ForegroundColor Green
+    Write-Host "  OK Processos antigos finalizados e arquivos temporarios limpos" -ForegroundColor Green
     Write-Host ""
 }
 
-# Função para verificar e instalar o Bore
+# Funcao para verificar e instalar o Bore
 function Install-Bore {
-    Write-Host "[2/6] Verificando instalação do Bore..." -ForegroundColor Yellow
+    Write-Host "[2/6] Verificando instalacao do Bore..." -ForegroundColor Yellow
 
     if (Get-Command bore -ErrorAction SilentlyContinue) {
-        Write-Host "  ✓ Bore já está instalado" -ForegroundColor Green
+        Write-Host "  OK Bore ja esta instalado" -ForegroundColor Green
     } else {
-        Write-Host "  Bore não encontrado. Instalando via Cargo..." -ForegroundColor Yellow
+        Write-Host "  Bore nao encontrado. Instalando via Cargo..." -ForegroundColor Yellow
 
-        # Verifica se o Cargo está instalado
+        # Verifica se o Cargo esta instalado
         if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
-            Write-Host "  ✗ Cargo (Rust) não está instalado!" -ForegroundColor Red
+            Write-Host "  ERRO Cargo (Rust) nao esta instalado!" -ForegroundColor Red
             Write-Host "  Por favor, instale Rust de: https://rustup.rs/" -ForegroundColor Red
-            Write-Host "  Ou baixe o executável do Bore de: https://github.com/ekzhang/bore/releases" -ForegroundColor Red
+            Write-Host "  Ou baixe o executavel do Bore de: https://github.com/ekzhang/bore/releases" -ForegroundColor Red
             exit 1
         }
 
         cargo install bore-cli
-        Write-Host "  ✓ Bore instalado com sucesso" -ForegroundColor Green
+        Write-Host "  OK Bore instalado com sucesso" -ForegroundColor Green
     }
     Write-Host ""
 }
 
-# Função para iniciar o Bore e capturar a URL
+# Funcao para iniciar o Bore e capturar a URL
 function Start-Bore {
-    Write-Host "[3/6] Iniciando túnel Bore..." -ForegroundColor Yellow
+    Write-Host "[3/6] Iniciando tunel Bore..." -ForegroundColor Yellow
 
-    # Remove arquivo de configuração antigo
+    # Remove arquivo de configuracao antigo
     if (Test-Path $BORE_CONFIG_FILE) {
         Remove-Item $BORE_CONFIG_FILE -Force
     }
@@ -94,7 +94,7 @@ function Start-Bore {
     }
 
     if (-not $boreUrl) {
-        Write-Host "  ✗ Timeout ao iniciar Bore!" -ForegroundColor Red
+        Write-Host "  ERRO Timeout ao iniciar Bore!" -ForegroundColor Red
         Stop-Job -Job $job
         Remove-Job -Job $job
         exit 1
@@ -103,23 +103,23 @@ function Start-Bore {
     # Salva a URL em arquivo
     $boreUrl | Out-File -FilePath $BORE_CONFIG_FILE -Encoding UTF8
 
-    Write-Host "  ✓ Bore iniciado com sucesso!" -ForegroundColor Green
+    Write-Host "  OK Bore iniciado com sucesso!" -ForegroundColor Green
     Write-Host "  URL Externa: $boreUrl" -ForegroundColor Cyan
     Write-Host ""
 
     return $boreUrl
 }
 
-# Função para criar/restaurar template do docker-compose
+# Funcao para criar/restaurar template do docker-compose
 function Ensure-DockerComposeTemplate {
     if (-not (Test-Path $DOCKER_COMPOSE_TEMPLATE)) {
         Write-Host "  Criando template do docker-compose..." -ForegroundColor Yellow
         Copy-Item $DOCKER_COMPOSE_FILE $DOCKER_COMPOSE_TEMPLATE
-        Write-Host "  ✓ Template criado" -ForegroundColor Green
+        Write-Host "  OK Template criado" -ForegroundColor Green
     }
 }
 
-# Função para atualizar o docker-compose com a URL do Bore
+# Funcao para atualizar o docker-compose com a URL do Bore
 function Update-DockerCompose {
     param([string]$BoreUrl)
 
@@ -127,11 +127,11 @@ function Update-DockerCompose {
 
     Ensure-DockerComposeTemplate
 
-    # IMPORTANTE: Sempre recria do template para garantir configuração correta
+    # IMPORTANTE: Sempre recria do template para garantir configuracao correta
     Copy-Item $DOCKER_COMPOSE_TEMPLATE $DOCKER_COMPOSE_FILE -Force
-    Write-Host "  → Copiado do template" -ForegroundColor Gray
+    Write-Host "  >> Copiado do template" -ForegroundColor Gray
 
-    # Lê o novo arquivo
+    # Le o novo arquivo
     $content = Get-Content $DOCKER_COMPOSE_FILE -Raw
 
     # Substitui a URL do Bore usando regex (aceita qualquer formato de URL externa)
@@ -140,49 +140,49 @@ function Update-DockerCompose {
     # Salva o arquivo atualizado
     $content | Out-File -FilePath $DOCKER_COMPOSE_FILE -Encoding UTF8 -NoNewline
 
-    Write-Host "  ✓ Docker-compose atualizado com: $BoreUrl" -ForegroundColor Green
+    Write-Host "  OK Docker-compose atualizado com: $BoreUrl" -ForegroundColor Green
     Write-Host ""
 }
 
-# Função para iniciar o Docker Compose
+# Funcao para iniciar o Docker Compose
 function Start-DockerCompose {
     Write-Host "[5/6] Iniciando containers Docker..." -ForegroundColor Yellow
 
     docker-compose up -d
 
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "  ✓ Containers iniciados com sucesso!" -ForegroundColor Green
+        Write-Host "  OK Containers iniciados com sucesso!" -ForegroundColor Green
     } else {
-        Write-Host "  ✗ Erro ao iniciar containers!" -ForegroundColor Red
+        Write-Host "  ERRO ao iniciar containers!" -ForegroundColor Red
         exit 1
     }
     Write-Host ""
 }
 
-# Função para exibir informações finais
+# Funcao para exibir informacoes finais
 function Show-Summary {
     param([string]$BoreUrl)
 
-    Write-Host "[6/6] Resumo da Configuração" -ForegroundColor Yellow
+    Write-Host "[6/6] Resumo da Configuracao" -ForegroundColor Yellow
     Write-Host "==================================================" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  Status: " -NoNewline -ForegroundColor White
     Write-Host "AMBIENTE PRONTO!" -ForegroundColor Green
     Write-Host ""
-    Write-Host "  Conexões Disponíveis:" -ForegroundColor White
-    Write-Host "  ├─ Local:      localhost:29092" -ForegroundColor Gray
-    Write-Host "  ├─ Interna:    kafka:9092" -ForegroundColor Gray
-    Write-Host "  └─ Databricks: $BoreUrl" -ForegroundColor Cyan
+    Write-Host "  Conexoes Disponiveis:" -ForegroundColor White
+    Write-Host "  -- Local:      localhost:29092" -ForegroundColor Gray
+    Write-Host "  -- Interna:    kafka:9092" -ForegroundColor Gray
+    Write-Host "  -- Databricks: $BoreUrl" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "  Configuração para Databricks:" -ForegroundColor White
+    Write-Host "  Configuracao para Databricks:" -ForegroundColor White
     Write-Host "  kafka.bootstrap.servers = ""$BoreUrl""" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "  Serviços Rodando:" -ForegroundColor White
-    Write-Host "  ├─ Zookeeper" -ForegroundColor Gray
-    Write-Host "  ├─ Kafka Broker" -ForegroundColor Gray
-    Write-Host "  ├─ Python Producer" -ForegroundColor Gray
-    Write-Host "  ├─ Spark Dev" -ForegroundColor Gray
-    Write-Host "  └─ Bore Tunnel" -ForegroundColor Gray
+    Write-Host "  Servicos Rodando:" -ForegroundColor White
+    Write-Host "  -- Zookeeper" -ForegroundColor Gray
+    Write-Host "  -- Kafka Broker" -ForegroundColor Gray
+    Write-Host "  -- Python Producer" -ForegroundColor Gray
+    Write-Host "  -- Spark Dev" -ForegroundColor Gray
+    Write-Host "  -- Bore Tunnel" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Spark UI: http://localhost:4040" -ForegroundColor Gray
     Write-Host ""
@@ -192,7 +192,7 @@ function Show-Summary {
     Write-Host ""
 }
 
-# Função principal
+# Funcao principal
 function Main {
     try {
         Stop-OldProcesses
@@ -202,13 +202,13 @@ function Main {
         Start-DockerCompose
         Show-Summary -BoreUrl $boreUrl
 
-        # Mantém o script rodando
+        # Mantem o script rodando
         Write-Host "Monitorando logs (Ctrl+C para sair)..." -ForegroundColor Gray
         docker-compose logs -f
 
     } catch {
         Write-Host ""
-        Write-Host "✗ Erro: $_" -ForegroundColor Red
+        Write-Host "ERRO: $_" -ForegroundColor Red
         exit 1
     }
 }

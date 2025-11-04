@@ -1,0 +1,17 @@
+# Arquivos gerados automaticamente pelo start-kafka-env.ps1
+bore_url.txt
+docker-compose.yml
+
+# Logs
+*.log
+
+# Arquivos temporários do Windows
+Thumbs.db
+desktop.ini
+
+# Arquivos temporários do Docker
+.docker/
+
+# Arquivos de ambiente
+.env.local
+.env.*.local

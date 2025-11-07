@@ -207,16 +207,15 @@ def prepare_bronze_data(df_stream, topic_name):
     Returns:
         DataFrame com colunas: key, value, topic, partition, offset, timestamp, ingestion_timestamp
     """
-    # Extrai sequence_id antes de fazer o to_json
-    df_with_key = df_stream.select(
+    # Converte para JSON e extrai a key
+    df_with_json = df_stream.select(
         col("data._sequence_id").alias("_key"),
-        col("data.*").alias("_data"),
         to_json(col("data")).alias("_raw_json"),
         col("_topic_name")
     )
 
     # Calcula partição baseado no hash da key
-    df_with_partition = df_with_key.select(
+    df_with_partition = df_with_json.select(
         col("_key").alias("key"),
         col("_raw_json").alias("value"),
         col("_topic_name").alias("topic"),
